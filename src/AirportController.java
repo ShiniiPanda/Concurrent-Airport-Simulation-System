@@ -28,7 +28,7 @@ public class AirportController implements Runnable {
     private void grantPermission(Plane p){
         synchronized (p){
             p.notify();
-            System.out.println("\n" + p.getName() + " : LANDING PERMISSION GRANTED!\n");
+            StandardMessages.PLANE_LANDING_PERMISSION_GRANTED(p.getName());
         }
     }
     private void awaitRequests(){
@@ -47,7 +47,7 @@ public class AirportController implements Runnable {
 //                    grantPermission(circleQueue.poll());
 //                }
                 AIRPORT_CAPACITY.decrementAndGet();
-                System.out.println("Current Airport Capacity: " + this.getAirportCapacity());
+                //System.out.println("Current Airport Capacity: " + this.getAirportCapacity());
                 grantPermission(Objects.requireNonNull(circleQueue.poll()));
             }
         }
