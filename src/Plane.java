@@ -1,14 +1,8 @@
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Random;
 
 public class Plane implements Runnable, Comparable<Plane> {
-
-    private static final String date_format = "dd-MM-yyyy HH:mm:ss";
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(date_format)
-            .withZone(ZoneId.systemDefault());
 
     private final int id;
     private String name;
@@ -82,37 +76,12 @@ public class Plane implements Runnable, Comparable<Plane> {
         this.takeOff();
     }
 
-//    public void landPlane(){
-//        System.out.println("Attempting to get permission to land");
-//        if (port.airportQueue.size() == 2) {
-//            System.out.println(this.name + ": Failure to acquire permission, Runaway is full!");
-//            System.out.println("Awaiting runaway landing clearance");
-//        }
-//        try {
-//            port.airportQueue.put(this);
-//            System.out.println(this.name + ": Permission to land receive, Initiating Landing.");
-//            Thread.sleep(new Random().nextInt(1000) * 5);
-//            System.out.println("Plane has successfully landed");
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
-//    public void emptySpot(){
-//        try {
-//            Thread.sleep(10000);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-//        port.airportQueue.remove(this);
-//    }
-
     public synchronized void RequestPermission () {
-        System.out.println(this.getName() + " : REQUESTING PERMISSION TO LAND!");
+        StandardMessages.PLANE_LANDING_REQUEST(name);
         this.planeStates = PlaneStates.AWAITING_LANDING_PERMISSION;
         port.circleQueue.offer(this);
         if (!port.airportHasSpace()) {
-            System.out.println(this.getName() + " : AIRPORT IS CURRENTLY FULL, AWAITING FOR RUNAWAY CLEARANCE!");
+            StandardMessages.PLANE_LANDING_AIRPORT_FULL(name);
             try {
                 this.wait();
             } catch (InterruptedException e) {
@@ -121,20 +90,20 @@ public class Plane implements Runnable, Comparable<Plane> {
         } else {
             port.circleQueue.remove(this);
             port.decrementCapacity();
-            System.out.println("Current Airport Capacity: " + port.getAirportCapacity());
-            System.out.println("\n" + this.name + " : LANDING PERMISSION GRANTED!\n");
+            //System.out.println("Current Airport Capacity: " + port.getAirportCapacity());
+            StandardMessages.PLANE_LANDING_PERMISSION_GRANTED(name);
         }
     }
 
     public void landPlane(){
-        System.out.println(this.getName() + " : ATTEMPTING TO LAND AIR CRAFT!\n");
+        StandardMessages.PLANE_LANDING_ATTEMPT(name);
         if (port.runaway_lock.isLocked()) {
-            System.out.println(this.getName() + " : RUNAWAY IS CURRENTLY TAKEN!\n");
+            StandardMessages.PLANE_LANDING_RUNAWAY_TAKEN(name);
             this.planeStates = PlaneStates.AWAITING_RUNAWAY_LANDING;
         }
         port.runaway_lock.lock();
         if (this.planeStates == PlaneStates.AWAITING_RUNAWAY_LANDING) {
-            System.out.println(this.getName() + " : RUNAWAY IS AVAILABLE, GOING FOR LANDING!\n");
+            StandardMessages.PLANE_LANDING_RUNAWAY_FREED(name);
         }
         this.planeStates = PlaneStates.LANDING;
         try {
@@ -142,7 +111,7 @@ public class Plane implements Runnable, Comparable<Plane> {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(this.getName() + " : AIR CRAFT HAS SUCCESSFULLY LANDED!\n");
+        StandardMessages.PLANE_LANDING_SUCCESSFUL(name);
         this.dockToGate();
         port.runaway_lock.unlock();
     }
@@ -150,13 +119,13 @@ public class Plane implements Runnable, Comparable<Plane> {
     public void dockToGate(){
         this.gate = port.checkEmptyGate();
         try {
-            System.out.println(this.getName() + " : GATE-" + this.gate + " IS AVAILABLE, ATTEMPTING DOCKING\n");
+            StandardMessages.PLANE_DOCKING_ATTEMPT(name, gate);
             this.planeStates = PlaneStates.DOCKING;
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(this.getName() + " : DOCKED SUCCESSFULLY TO GATE-" + this.gate + "\n");
+        StandardMessages.PLANE_DOCKING_SUCCESSFUL(name, gate);
     }
 
     private void freeSpace(){
@@ -166,7 +135,7 @@ public class Plane implements Runnable, Comparable<Plane> {
             throw new RuntimeException(e);
         }
         port.incrementCapacity();
-        System.out.println("Current Airport Capacity: " + port.getAirportCapacity());
+        //System.out.println("Current Airport Capacity: " + port.getAirportCapacity());
         if(port.circleQueue.size() == 0 && port.airportIsEmpty()){
             port.requestsComing.set(false);
         }
@@ -188,7 +157,7 @@ public class Plane implements Runnable, Comparable<Plane> {
     }
 
     private void cleanPlane(){
-        System.out.println(this.getName() + " : STARTING AIRCRAFT CLEANING!\n");
+        StandardMessages.PLANE_CLEANING_BEGIN(name);
         this.planeStates = PlaneStates.GETTING_CLEANED;
         try {
             Thread.sleep(new Random().nextInt(3000) + 2000); // 2000 - 5000
@@ -196,79 +165,79 @@ public class Plane implements Runnable, Comparable<Plane> {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(this.getName() + ": CLEANING PROCESS IS COMPLETE!\n");
+        StandardMessages.PLANE_CLEANING_FINISH(name);
     }
 
     private void refillSupplies(){
-        System.out.println(this.getName() + ": REFILLING PLANE SUPPLIES!\n");
+        StandardMessages.PLANE_RESUPPLY_BEGIN(name);
         this.planeStates = PlaneStates.REFILLING_SUPPLIES;
         try {
             Thread.sleep(new Random().nextInt(3000) + 2000); // 2000 - 5000
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(this.getName() + ": RESUPPLYING HAS BEEN COMPLETED!\n");
+        StandardMessages.PLANE_RESUPPLY_FINISH(name);
     }
 
     private void refuelPlane(){
-        System.out.println(this.getName() + ": ATTEMPTING TO REFUEL THE AIRCRAFT!");
+        StandardMessages.PLANE_REFUEL_ATTEMPT(name);
         if (port.refuel_truck.isLocked()){
-            System.out.println(this.getName() + ": FUEL TRUCK CURRENTLY IN USE, AWAITING CLEARANCE!\n");
+            StandardMessages.PLANE_REFUEL_TRUCK_TAKEN(name);
             this.planeStates = PlaneStates.AWAITING_REFUEL_TRUCK;
         }
         port.refuel_truck.lock();
-        System.out.println(this.getName() + ": STARTING REFUELLING PROCESS!\n");
+        StandardMessages.PLANE_REFUEL_BEGIN(name);
         this.planeStates = PlaneStates.REFUELING_TANK;
         try {
             Thread.sleep(new Random().nextInt(3000) + 3000); // 3000 - 6000
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(this.getName() + ": FINISHED REFUELLING TANK!\n");
+        StandardMessages.PLANE_REFUEL_FINISH(name);
         port.refuel_truck.unlock();
     }
 
 
     private void unloadPassengers(){
         this.planeStates = PlaneStates.UNLOADING_PASSENGERS;
-        System.out.println(this.getName() + " : PREPARING TO DISEMBARK PASSENGERS!\n");
+        StandardMessages.PLANE_DISEMBARK_BEGIN(name);
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         for (int i = this.capacity; i > 0; i--){
-            System.out.println(this.getName() + " : PASSENGER-" + i + " DISEMBARKED FROM THE PLANE!");
+            StandardMessages.PLANE_DISEMBARK_PASSENGER(name, i);
             try {
                 Thread.sleep((new Random().nextInt(10) + 1) * 100);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        System.out.println("\n" + this.getName() + " : FINISHED DISEMBARKING PASSENGERS!\n");
+        StandardMessages.PLANE_DISEMBARK_FINISH(name);
     }
 
     private void undockFromGate(){
-        System.out.println(this.getName() + ": STARTING UNDOCKING PROCESS FROM GATE-" + this.gate +"!\n");
+        StandardMessages.PLANE_UNDOCKING_ATTEMPT(name, gate);
         this.planeStates = PlaneStates.UNDOCKING;
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(this.getName() + ": SUCCESSFULLY UNDOCKED FROM GATE-" + this.gate + "!\n");
+        StandardMessages.PLANE_UNDOCKING_SUCCESSFUL(name, gate);
         this.freeGate();
     }
 
     private void takeOff(){
         undockFromGate();
-        System.out.println(this.getName() + ": PREPARING TO TAKE OFF, CHECKING RUNAWAY!\n");
+        StandardMessages.PLANE_TAKEOFF_ATTEMPT(name);
         if (port.runaway_lock.isLocked()){
-            System.out.println(this.getName() + ": RUNAWAY IS CURRENTLY IN USE, AWAITING CLEARANCE FOR TAKEOFF!\n");
+            StandardMessages.PLANE_TAKEOFF_RUNAWAY_TAKEN(name);
             this.planeStates = PlaneStates.AWAITING_RUNAWAY_TAKEOFF;
         }
         port.runaway_lock.lock();
-        System.out.println(this.getName() + ": RUNAWAY IS AVAILABLE, GOING FOR TAKE OFF!\n");
+        StandardMessages.PLANE_TAKEOFF_BEGIN(name);
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
@@ -277,42 +246,38 @@ public class Plane implements Runnable, Comparable<Plane> {
         port.runaway_lock.unlock();
         this.endTime = Instant.now();
         this.duration = Duration.between(startTime, endTime).toMillis() / 1000;
-        System.out.println("[ " + formatter.format(this.endTime) + " ] " + this.getName() + ": AIRCRAFT HAS TAKEN OFF SUCCESSFULLY!\n");
-        System.out.println(this.getName() + ": SIMULATION FINISHED IN " + this.duration + " SECONDS!");
+        StandardMessages.PLANE_TAKEOFF_SUCCESSFUL(name, endTime);
+        StandardMessages.PLANE_SIMULATION_FINISH(name, duration);
         port.addReport(this);
         this.freeSpace();
     }
 
     private void loadPassengers(){
         this.planeStates = PlaneStates.LOADING_PASSENGERS;
-        System.out.println(this.getName() + " : PREPARING TO EMBARK PASSENGERS!\n");
+        StandardMessages.PLANE_EMBARK_BEGIN(name);
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         for (int i = this.capacity; i > 0; i--){
-            System.out.println(this.getName() + " : PASSENGER-" + i + " EMBARKED ONTO THE PLANE!");
+            StandardMessages.PLANE_EMBARK_PASSENGER(name, i);
             try {
                 Thread.sleep((new Random().nextInt(10) + 1) * 100);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        System.out.println("\n" + this.getName() + " : FINISHED EMBARKING PASSENGERS!\n");
+        StandardMessages.PLANE_EMBARK_FINISH(name);
     }
 
 
     public synchronized void create(){
         this.startTime = Instant.now();
         if (priorityLevel == PriorityLevel.NORMAL_PRIORITY) {
-            System.out.println("[" + formatter.format(this.startTime) + "] " + this.name + " : JOINED THE BATTLE!");
+            StandardMessages.PLANE_ARRIVED_NORMAL(name, startTime);
         } else if (priorityLevel == PriorityLevel.HIGH_PRIORITY) {
-            System.out.println("===============================================\n" +
-                               "                 EMERGENCY!!!!                 \n" +
-                               "===============================================\n" +
-                               "[" + formatter.format(this.startTime) + "] " + this.name +  " : JOINED THE BATTLE, HIGH PRIORITY");
-
+            StandardMessages.PLANE_ARRIVED_EMERGENCY(name, startTime);
         }
         t = new Thread(this);
         t.start();
