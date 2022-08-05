@@ -2,7 +2,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 
-public class Plane implements Runnable, Comparable<Plane> {
+public class Plane implements Runnable {
 
     private final int id;
     private String name;
@@ -66,7 +66,7 @@ public class Plane implements Runnable, Comparable<Plane> {
     }
 
     public void run(){
-        this.RequestPermission();
+        this.requestPermission();
         this.landPlane();
         this.unloadPassengers();
         this.cleanPlane();
@@ -76,7 +76,7 @@ public class Plane implements Runnable, Comparable<Plane> {
         this.takeOff();
     }
 
-    public synchronized void RequestPermission () {
+    public synchronized void requestPermission() {
         StandardMessages.PLANE_LANDING_REQUEST(name);
         this.planeStates = PlaneStates.AWAITING_LANDING_PERMISSION;
         port.circleQueue.offer(this);
@@ -97,11 +97,11 @@ public class Plane implements Runnable, Comparable<Plane> {
 
     public void landPlane(){
         StandardMessages.PLANE_LANDING_ATTEMPT(name);
-        if (port.runaway_lock.isLocked()) {
+        if (port.runway_lock.isLocked()) {
             StandardMessages.PLANE_LANDING_RUNAWAY_TAKEN(name);
             this.planeStates = PlaneStates.AWAITING_RUNAWAY_LANDING;
         }
-        port.runaway_lock.lock();
+        port.runway_lock.lock();
         if (this.planeStates == PlaneStates.AWAITING_RUNAWAY_LANDING) {
             StandardMessages.PLANE_LANDING_RUNAWAY_FREED(name);
         }
@@ -113,7 +113,7 @@ public class Plane implements Runnable, Comparable<Plane> {
         }
         StandardMessages.PLANE_LANDING_SUCCESSFUL(name);
         this.dockToGate();
-        port.runaway_lock.unlock();
+        port.runway_lock.unlock();
     }
 
     public void dockToGate(){
@@ -160,7 +160,7 @@ public class Plane implements Runnable, Comparable<Plane> {
         StandardMessages.PLANE_CLEANING_BEGIN(name);
         this.planeStates = PlaneStates.GETTING_CLEANED;
         try {
-            Thread.sleep(new Random().nextInt(3000) + 2000); // 2000 - 5000
+            Thread.sleep(new Random().nextInt(3000) + 2000);
 
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -172,7 +172,7 @@ public class Plane implements Runnable, Comparable<Plane> {
         StandardMessages.PLANE_RESUPPLY_BEGIN(name);
         this.planeStates = PlaneStates.REFILLING_SUPPLIES;
         try {
-            Thread.sleep(new Random().nextInt(3000) + 2000); // 2000 - 5000
+            Thread.sleep(new Random().nextInt(3000) + 2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -189,7 +189,7 @@ public class Plane implements Runnable, Comparable<Plane> {
         StandardMessages.PLANE_REFUEL_BEGIN(name);
         this.planeStates = PlaneStates.REFUELING_TANK;
         try {
-            Thread.sleep(new Random().nextInt(3000) + 3000); // 3000 - 6000
+            Thread.sleep(new Random().nextInt(3000) + 3000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -232,23 +232,24 @@ public class Plane implements Runnable, Comparable<Plane> {
     private void takeOff(){
         undockFromGate();
         StandardMessages.PLANE_TAKEOFF_ATTEMPT(name);
-        if (port.runaway_lock.isLocked()){
+        if (port.runway_lock.isLocked()){
             StandardMessages.PLANE_TAKEOFF_RUNAWAY_TAKEN(name);
             this.planeStates = PlaneStates.AWAITING_RUNAWAY_TAKEOFF;
         }
-        port.runaway_lock.lock();
+        port.runway_lock.lock();
         StandardMessages.PLANE_TAKEOFF_BEGIN(name);
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        port.runaway_lock.unlock();
+        port.runway_lock.unlock();
         this.endTime = Instant.now();
         this.duration = Duration.between(startTime, endTime).toMillis() / 1000;
         StandardMessages.PLANE_TAKEOFF_SUCCESSFUL(name, endTime);
         StandardMessages.PLANE_SIMULATION_FINISH(name, duration);
         port.addReport(this);
+        port.totalPassengers.addAndGet(this.capacity);
         this.freeSpace();
     }
 
@@ -281,10 +282,6 @@ public class Plane implements Runnable, Comparable<Plane> {
         }
         t = new Thread(this);
         t.start();
-    }
-
-    public int compareTo(Plane other) {
-        return this.getPriorityLevel().getPriority() - other.getPriorityLevel().getPriority();
     }
 
 }
