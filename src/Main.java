@@ -14,15 +14,6 @@ public class Main {
         generatorThread.start();
         Thread controllerThread = new Thread(controller);
         controllerThread.start();
-//        Scanner scanner = new Scanner(System.in);
-//        int i = 0;
-//        while (true) {
-//            i++;
-//            System.out.println(i);
-//            String input = scanner.next();
-//            if (input.equals("0")) {System.out.println("break"); break;}
-//            System.out.println("\n" + input);
-//        }
     }
 
     private static boolean initiateSimulation(){
