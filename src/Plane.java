@@ -4,7 +4,6 @@ import java.util.Random;
 
 public class Plane implements Runnable {
 
-    private final int id;
     private String name;
     private final AirportController port;
     private Thread t;
@@ -16,49 +15,28 @@ public class Plane implements Runnable {
     private Instant startTime, endTime;
     private long duration;
 
-    public Plane(int id, AirportController port) {
-        this.id = id;
-        this.name = "Plane-" + id;
+    public Plane(String name, AirportController port) {
+        this.name = name;
         this.port = port;
     }
 
-    public Plane(int id, AirportController port, PriorityLevel priorityLevel) {
-        this.id = id;
-        this.name = "Plane-" + id;
+    public Plane(String name, AirportController port, PriorityLevel priorityLevel) {
+        this.name = name;
         this.port = port;
         this.priorityLevel = priorityLevel;
         this.capacity = new Random().nextInt(31) + 20; // 20 - 50 Passengers
     }
+
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public PriorityLevel getPriorityLevel() {
         return priorityLevel;
     }
 
-    public void setPriorityLevel(PriorityLevel priorityLevel) {
-        this.priorityLevel = priorityLevel;
-    }
-
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
-    }
-
     public Instant getStartTime() {
         return startTime;
-    }
-
-    public Instant getEndTime() {
-        return endTime;
     }
 
     public long getDuration() {
@@ -128,34 +106,6 @@ public class Plane implements Runnable {
         StandardMessages.PLANE_DOCKING_SUCCESSFUL(name, gate);
     }
 
-    private void freeSpace(){
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        port.incrementCapacity();
-        //System.out.println("Current Airport Capacity: " + port.getAirportCapacity());
-        if(port.circleQueue.size() == 0 && port.airportIsEmpty()){
-            port.requestsComing.set(false);
-        }
-        synchronized (port){
-           // System.out.println("\nWaking it up!\n");
-            port.notify();
-        }
-    }
-
-    private void freeGate(){
-        switch(this.gate){
-            case 1:
-                port.gate1_available = true;
-                break;
-            case 2:
-                port.gate2_available = true;
-                break;
-        }
-    }
-
     private void cleanPlane(){
         StandardMessages.PLANE_CLEANING_BEGIN(name);
         this.planeStates = PlaneStates.GETTING_CLEANED;
@@ -197,7 +147,6 @@ public class Plane implements Runnable {
         port.refuel_truck.unlock();
     }
 
-
     private void unloadPassengers(){
         this.planeStates = PlaneStates.UNLOADING_PASSENGERS;
         StandardMessages.PLANE_DISEMBARK_BEGIN(name);
@@ -209,7 +158,7 @@ public class Plane implements Runnable {
         for (int i = this.capacity; i > 0; i--){
             StandardMessages.PLANE_DISEMBARK_PASSENGER(name, i);
             try {
-                Thread.sleep((new Random().nextInt(10) + 1) * 100);
+                Thread.sleep((new Random().nextInt(10) + 1) * 85); // Passenger Generated every 85-850 seconds at random
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -217,6 +166,35 @@ public class Plane implements Runnable {
         StandardMessages.PLANE_DISEMBARK_FINISH(name);
     }
 
+    private void loadPassengers(){
+        this.planeStates = PlaneStates.LOADING_PASSENGERS;
+        StandardMessages.PLANE_EMBARK_BEGIN(name);
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        for (int i = this.capacity; i > 0; i--){
+            StandardMessages.PLANE_EMBARK_PASSENGER(name, i);
+            try {
+                Thread.sleep((new Random().nextInt(10) + 1) * 85); // Passenger Generated every 85-850 seconds at random
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        StandardMessages.PLANE_EMBARK_FINISH(name);
+    }
+
+    private void freeGate(){
+        switch(this.gate){
+            case 1:
+                port.gate1_available = true;
+                break;
+            case 2:
+                port.gate2_available = true;
+                break;
+        }
+    }
     private void undockFromGate(){
         StandardMessages.PLANE_UNDOCKING_ATTEMPT(name, gate);
         this.planeStates = PlaneStates.UNDOCKING;
@@ -237,6 +215,7 @@ public class Plane implements Runnable {
             this.planeStates = PlaneStates.AWAITING_RUNAWAY_TAKEOFF;
         }
         port.runway_lock.lock();
+        this.planeStates = PlaneStates.TAKING_OFF;
         StandardMessages.PLANE_TAKEOFF_BEGIN(name);
         try {
             Thread.sleep(2000);
@@ -250,28 +229,26 @@ public class Plane implements Runnable {
         StandardMessages.PLANE_SIMULATION_FINISH(name, duration);
         port.addReport(this);
         port.totalPassengers.addAndGet(this.capacity);
+        this.planeStates = PlaneStates.FINISHED;
         this.freeSpace();
     }
 
-    private void loadPassengers(){
-        this.planeStates = PlaneStates.LOADING_PASSENGERS;
-        StandardMessages.PLANE_EMBARK_BEGIN(name);
+    private void freeSpace(){
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        for (int i = this.capacity; i > 0; i--){
-            StandardMessages.PLANE_EMBARK_PASSENGER(name, i);
-            try {
-                Thread.sleep((new Random().nextInt(10) + 1) * 100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        port.incrementCapacity();
+        //System.out.println("Current Airport Capacity: " + port.getAirportCapacity());
+        if(port.circleQueue.size() == 0 && port.airportIsEmpty()){
+            port.requestsComing.set(false);
         }
-        StandardMessages.PLANE_EMBARK_FINISH(name);
+        synchronized (port){
+            // System.out.println("\nWaking it up!\n");
+            port.notify();
+        }
     }
-
 
     public synchronized void create(){
         this.startTime = Instant.now();

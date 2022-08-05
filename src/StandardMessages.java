@@ -21,14 +21,14 @@ public class StandardMessages {
     }
 
     public static void PLANE_ARRIVED_NORMAL(String name, Instant time){
-        System.out.println("[" + time + "] " + name + " : JOINED THE SIMULATION!");
+        System.out.println("\n[" + time + "] " + name + " : JOINED THE SIMULATION!\n");
     }
 
     public static void PLANE_ARRIVED_EMERGENCY(String name, Instant time) {
-        System.out.println("===============================================\n" +
+        System.out.println("\n===============================================\n" +
                            "                 EMERGENCY!!!!                 \n" +
                            "===============================================\n" +
-                           "[" + time + "] " + name +  " : JOINED THE SIMULATION, HIGH PRIORITY!");
+                           "[" + time + "] " + name +  " : JOINED THE SIMULATION, HIGH PRIORITY!\n");
     }
 
     public static void PLANE_LANDING_REQUEST(String name){

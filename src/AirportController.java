@@ -10,11 +10,11 @@ public class AirportController implements Runnable {
 
     private static final int MAXIMUM_AIRPORT_CAPACITY = 2;
 
-    private final AtomicInteger AIRPORT_CAPACITY = new AtomicInteger(MAXIMUM_AIRPORT_CAPACITY);
+    private final AtomicInteger AIRPORT_CAPACITY = new AtomicInteger(MAXIMUM_AIRPORT_CAPACITY); // Semaphore Implementation
 
     public volatile boolean gate1_available = true,
                             gate2_available = true;
-    private final List<Long> durationList = new ArrayList<>();
+    private final List<Long> durationList = new ArrayList<>(); // Duration List for Report Generation
 
     public AtomicInteger totalPassengers = new AtomicInteger(0);
     public volatile PriorityBlockingQueue<Plane> circleQueue =
@@ -39,18 +39,13 @@ public class AirportController implements Runnable {
             if (!airportHasSpace() || circleQueue.size() <= 0){
                 synchronized (this){
                     try {
-                        //System.out.println("\nGoing to sleep!\n");
                         wait();
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                 }
             } else {
-//                if (airportQueue.offer(circleQueue.peek())) {
-//                    grantPermission(circleQueue.poll());
-//                }
                 AIRPORT_CAPACITY.decrementAndGet();
-                //System.out.println("Current Airport Capacity: " + this.getAirportCapacity());
                 grantPermission(Objects.requireNonNull(circleQueue.poll()));
             }
         }

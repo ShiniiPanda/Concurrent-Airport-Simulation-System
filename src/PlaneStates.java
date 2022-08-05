@@ -11,5 +11,6 @@ public enum PlaneStates {
     LOADING_PASSENGERS,
     UNDOCKING,
     AWAITING_RUNAWAY_TAKEOFF,
-    TAKEOFF
+    TAKING_OFF,
+    FINISHED
 }

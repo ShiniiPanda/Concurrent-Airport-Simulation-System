@@ -2,8 +2,8 @@ import java.util.Scanner;
 
 public class Main {
 
-    private static int planesNum;
-    private static boolean emergencyEnable = false;
+    private static int planesNum; // Planes to Generate
+    private static boolean emergencyEnable = false; // Option for Emergency Scenarios
 
     public static void main(String[] args) {
         AirportController controller = new AirportController();

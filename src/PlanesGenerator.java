@@ -22,7 +22,7 @@ public class PlanesGenerator implements Runnable {
         int i = 1, randInt;
         if (!this.emergency) {
             while(planesToGenerate > 0){
-                new Plane(i, port, PriorityLevel.NORMAL_PRIORITY).create();
+                new Plane("Plane-" + i, port, PriorityLevel.NORMAL_PRIORITY).create();
                 try {
                     Thread.sleep(new Random().nextInt(3000));
                 } catch (InterruptedException e) {
@@ -36,10 +36,10 @@ public class PlanesGenerator implements Runnable {
                 randInt = new Random().nextInt(2);
                 switch(randInt){
                     case 0:
-                        new Plane(i, port, PriorityLevel.NORMAL_PRIORITY).create();
+                        new Plane("Plane-" + i, port, PriorityLevel.NORMAL_PRIORITY).create();
                         break;
                     case 1:
-                        new Plane(i, port, PriorityLevel.HIGH_PRIORITY).create();
+                        new Plane("Plane-" + i, port, PriorityLevel.HIGH_PRIORITY).create();
                         break;
                 }
                 try {
