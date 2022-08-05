@@ -8,12 +8,12 @@ public class Main {
     public static void main(String[] args) {
         AirportController controller = new AirportController();
         System.out.println(StandardMessages.PLANE_ART());
-        while(!initiateSimulation());
+        while(!initiateSimulation()); // Get Pre-Simulation Data
         PlanesGenerator planesGenerator = new PlanesGenerator(controller, planesNum, emergencyEnable);
         Thread generatorThread = new Thread(planesGenerator);
-        generatorThread.start();
+        generatorThread.start(); // Start Plane Generation
         Thread controllerThread = new Thread(controller);
-        controllerThread.start();
+        controllerThread.start(); // Start Airport Controller
     }
 
     private static boolean initiateSimulation(){
