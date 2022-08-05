@@ -10,13 +10,16 @@ public class AirportController implements Runnable {
 
     private static final int MAXIMUM_AIRPORT_CAPACITY = 2;
 
+    private final AtomicInteger AIRPORT_CAPACITY = new AtomicInteger(MAXIMUM_AIRPORT_CAPACITY);
+
     public volatile boolean gate1_available = true,
                             gate2_available = true;
     private final List<Long> durationList = new ArrayList<>();
-    private final AtomicInteger AIRPORT_CAPACITY = new AtomicInteger(MAXIMUM_AIRPORT_CAPACITY);
+
+    public AtomicInteger totalPassengers = new AtomicInteger(0);
     public volatile PriorityBlockingQueue<Plane> circleQueue =
             new PriorityBlockingQueue<>(6, PriorityLevel.priorityCompare);
-    public ReentrantLock runaway_lock = new ReentrantLock(),
+    public ReentrantLock runway_lock = new ReentrantLock(),
                          refuel_truck = new ReentrantLock();
 
     public AtomicBoolean requestsComing = new AtomicBoolean(true);
@@ -78,13 +81,14 @@ public class AirportController implements Runnable {
         }
         avg = sum / durationList.size();
 
-        System.out.println("\n=====================================");
+        System.out.println("\n======================================");
         System.out.println("            Status Report            ");
         System.out.println("======================================");
         System.out.println("Total Number Of Plane Operations: " + durationList.size());
-        System.out.println("Minimum Plane Operation Time: " + min);
-        System.out.println("Maximum Plane Operation Time: " + max);
-        System.out.println("Average Plane Operation Time: " + avg);
+        System.out.println("Minimum Plane Operation Time: " + min + " Seconds");
+        System.out.println("Maximum Plane Operation Time: " + max + " Seconds");
+        System.out.println("Average Plane Operation Time: " + avg + " Seconds");
+        System.out.println("Total Number Of Passengers: " + totalPassengers);
         System.out.println("Gate-1 Status: " + (this.gate1_available ? "FREE" : "OCCUPIED"));
         System.out.println("Gate-2 Status: " + (this.gate2_available ? "FREE" : "OCCUPIED"));
         System.out.println("======================================\n");
