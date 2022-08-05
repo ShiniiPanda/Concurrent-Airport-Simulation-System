@@ -51,16 +51,5 @@ public class PlanesGenerator implements Runnable {
                 planesToGenerate--;
             }
         }
-//        try {
-//            Thread.sleep(5000);
-//            for (Plane plane : port.runawayController.circleQueue
-//                 ) {
-//                System.out.println(plane.getName() + ": " + plane.getStartTime().toEpochMilli());
-//            }
-//            System.out.println("First Element: " + port.runawayController.circleQueue.peek().getName() + "\n" +port.runawayController.circleQueue.peek().getPriorityLevel().getPriority());
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-
     }
 }
